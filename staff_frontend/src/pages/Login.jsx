@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { auth, login, errorMessage } from '../services/api'
+import AuthShell from '../components/AuthShell'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -16,7 +17,7 @@ export default function Login() {
     try {
       const data = await login(email.trim(), password)
       if (data.role === 'CUSTOMER') {
-        setError('This site is for staff. Customers should use the customer site.')
+        setError('This console is for staff. Customers should use the customer site.')
         return
       }
       auth.save(data)
@@ -30,24 +31,31 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
-      <form onSubmit={submit} className="w-full max-w-sm space-y-4 rounded-lg border bg-white p-6 shadow-sm">
-        <h1 className="text-lg font-semibold">Staff sign in</h1>
-        {error && <p className="rounded bg-red-50 p-2 text-sm text-red-700">{error}</p>}
-        <label className="block text-sm">
-          Email
+    <AuthShell
+      title="Move every order from cart to doorstep."
+      subtitle="The staff console for purchasing agents: review new orders, buy, ship and track — all in one queue."
+      bullets={[
+        ['cart', 'Review items customers add from 1688 & Taobao'],
+        ['truck', 'Update status and tracking numbers in one click'],
+        ['warehouse', 'Keep customers informed until delivery'],
+      ]}
+    >
+      <form onSubmit={submit} className="space-y-4">
+        <div>
+          <h2 className="text-xl font-bold text-navy-900">Staff sign in</h2>
+          <p className="text-sm text-slate-500">Use your staff or admin account.</p>
+        </div>
+        {error && <p className="rounded-lg bg-red-50 p-2.5 text-sm text-red-700 ring-1 ring-red-100">{error}</p>}
+        <label className="block text-sm font-medium text-navy-800">Email
           <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded border px-3 py-2" autoComplete="username" />
+            className="field" autoComplete="username" />
         </label>
-        <label className="block text-sm">
-          Password
+        <label className="block text-sm font-medium text-navy-800">Password
           <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 w-full rounded border px-3 py-2" autoComplete="current-password" />
+            className="field" autoComplete="current-password" />
         </label>
-        <button disabled={busy} className="w-full rounded bg-slate-900 py-2 text-white disabled:opacity-50">
-          {busy ? 'Signing in…' : 'Sign in'}
-        </button>
+        <button disabled={busy} className="btn-primary w-full py-2.5">{busy ? 'Signing in…' : 'Sign in'}</button>
       </form>
-    </div>
+    </AuthShell>
   )
 }

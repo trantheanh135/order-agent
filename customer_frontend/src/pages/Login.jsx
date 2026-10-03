@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { auth, login, register, errorMessage } from '../services/api'
+import AuthShell from '../components/AuthShell'
 
 export default function Login({ register: isRegister = false }) {
   const navigate = useNavigate()
@@ -19,7 +20,7 @@ export default function Login({ register: isRegister = false }) {
         ? await register(name.trim(), email.trim(), password)
         : await login(email.trim(), password)
       if (data.role !== 'CUSTOMER') {
-        setError('This site is for customers. Staff should use the staff site.')
+        setError('This site is for customers. Staff should use the staff console.')
         return
       }
       auth.save(data)
@@ -34,36 +35,45 @@ export default function Login({ register: isRegister = false }) {
     }
   }
 
-  const input = 'mt-1 w-full rounded border px-3 py-2'
-
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
-      <form onSubmit={submit} className="w-full max-w-sm space-y-4 rounded-lg border bg-white p-6 shadow-sm">
-        <h1 className="text-lg font-semibold">{isRegister ? 'Create your account' : 'Sign in'}</h1>
-        {error && <p className="rounded bg-red-50 p-2 text-sm text-red-700">{error}</p>}
+    <AuthShell
+      title="Shop 1688 & Taobao. Track every parcel."
+      subtitle="Add items to your cart while you browse — we buy, ship and keep you updated from the warehouse to your door."
+      bullets={[
+        ['cart', 'Items are captured automatically by the browser extension'],
+        ['ship', 'Follow each order from purchase to delivery'],
+        ['pin', 'See tracking numbers the moment they are issued'],
+      ]}
+    >
+      <form onSubmit={submit} className="space-y-4">
+        <div>
+          <h2 className="text-xl font-bold text-navy-900">{isRegister ? 'Create your account' : 'Welcome back'}</h2>
+          <p className="text-sm text-slate-500">{isRegister ? 'It takes less than a minute.' : 'Sign in to see your orders.'}</p>
+        </div>
+        {error && <p className="rounded-lg bg-red-50 p-2.5 text-sm text-red-700 ring-1 ring-red-100">{error}</p>}
         {isRegister && (
-          <label className="block text-sm">Name
-            <input required value={name} onChange={(e) => setName(e.target.value)} className={input} />
+          <label className="block text-sm font-medium text-navy-800">Name
+            <input required value={name} onChange={(e) => setName(e.target.value)} className="field" />
           </label>
         )}
-        <label className="block text-sm">Email
+        <label className="block text-sm font-medium text-navy-800">Email
           <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-            className={input} autoComplete="username" />
+            className="field" autoComplete="username" />
         </label>
-        <label className="block text-sm">Password{isRegister && ' (min 8 characters)'}
+        <label className="block text-sm font-medium text-navy-800">Password{isRegister && <span className="font-normal text-slate-400"> (min 8 characters)</span>}
           <input type="password" required minLength={isRegister ? 8 : undefined} value={password}
-            onChange={(e) => setPassword(e.target.value)} className={input}
+            onChange={(e) => setPassword(e.target.value)} className="field"
             autoComplete={isRegister ? 'new-password' : 'current-password'} />
         </label>
-        <button disabled={busy} className="w-full rounded bg-slate-900 py-2 text-white disabled:opacity-50">
+        <button disabled={busy} className="btn-primary w-full py-2.5">
           {busy ? 'Please wait…' : isRegister ? 'Create account' : 'Sign in'}
         </button>
         <p className="text-center text-sm text-slate-500">
           {isRegister
-            ? <>Already have an account? <Link to="/login" className="text-blue-600 hover:underline">Sign in</Link></>
-            : <>New here? <Link to="/register" className="text-blue-600 hover:underline">Create an account</Link></>}
+            ? <>Already have an account? <Link to="/login" className="font-semibold text-accent-600 hover:underline">Sign in</Link></>
+            : <>New here? <Link to="/register" className="font-semibold text-accent-600 hover:underline">Create an account</Link></>}
         </p>
       </form>
-    </div>
+    </AuthShell>
   )
 }

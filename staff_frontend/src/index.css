@@ -1,3 +1,29 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-sans antialiased text-navy-900;
+    background-color: #f3f6fa;
+    background-image: url('/pattern-routes.svg');
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border border-slate-200/80 bg-white shadow-sm;
+  }
+  .field {
+    @apply mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition
+      focus:border-accent-500 focus:ring-2 focus:ring-accent-500/25;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-accent-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition
+      hover:bg-accent-600 focus:outline-none focus:ring-2 focus:ring-accent-500/40 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-navy-800 transition
+      hover:bg-slate-50 disabled:opacity-50;
+  }
+}

@@ -1,15 +1,13 @@
-const COLORS = {
-  NEW: 'bg-blue-100 text-blue-800',
-  PURCHASED: 'bg-amber-100 text-amber-800',
-  SHIPPED: 'bg-violet-100 text-violet-800',
-  DELIVERED: 'bg-emerald-100 text-emerald-800',
-  CANCELLED: 'bg-slate-200 text-slate-600',
-}
+import Icon from './Icon'
+import { STATUS_META } from './status'
 
 export default function StatusBadge({ status }) {
+  const m = STATUS_META[status]
+  if (!m) return null
   return (
-    <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${COLORS[status] || ''}`}>
-      {status}
+    <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${m.badge}`}>
+      <Icon name={m.icon} size={13} />
+      {m.label}
     </span>
   )
 }
