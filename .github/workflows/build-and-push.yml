@@ -1,4 +1,4 @@
-name: Build and Push Docker Image
+name: Build and Push Docker Images
 
 on:
   push:
@@ -6,18 +6,29 @@ on:
       - main
     paths:
       - 'backend_code/**'
+      - 'staff_frontend/**'
+      - 'customer_frontend/**'
       - '.github/workflows/build-and-push.yml'
 
 env:
-  BACKEND_IMAGE: ghcr.io/${{ github.repository_owner }}/order-agent-backend
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/order-agent
 
 permissions:
   contents: read
   packages: write
 
 jobs:
-  build-backend:
+  build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: backend
+            context: ./backend_code
+          - name: staff-frontend
+            context: ./staff_frontend
+          - name: customer-frontend
+            context: ./customer_frontend
     steps:
       - uses: actions/checkout@v4
 
@@ -30,17 +41,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push backend
+      - name: Build and push ${{ matrix.name }}
         uses: docker/build-push-action@v5
         with:
-          context: ./backend_code
+          context: ${{ matrix.context }}
           push: true
           tags: |
-            ${{ env.BACKEND_IMAGE }}:latest
-            ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+            ${{ env.IMAGE_PREFIX }}-${{ matrix.name }}:latest
+            ${{ env.IMAGE_PREFIX }}-${{ matrix.name }}:${{ github.sha }}
 
   update-manifests:
-    needs: build-backend
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -49,16 +60,18 @@ jobs:
           token: ${{ secrets.MANIFESTS_REPO_TOKEN }}
           path: manifests
 
-      - name: Update backend image
+      - name: Update image tags
         run: |
           cd manifests
-          sed -i "s|image:.*order-agent-backend.*|image: ${{ env.BACKEND_IMAGE }}:${{ github.sha }}|g" k8s/03-backend.yaml
+          sed -i "s|image:.*order-agent-backend.*|image: ${{ env.IMAGE_PREFIX }}-backend:${{ github.sha }}|g" k8s/03-backend.yaml
+          sed -i "s|image:.*order-agent-staff-frontend.*|image: ${{ env.IMAGE_PREFIX }}-staff-frontend:${{ github.sha }}|g" k8s/04-staff-frontend.yaml
+          sed -i "s|image:.*order-agent-customer-frontend.*|image: ${{ env.IMAGE_PREFIX }}-customer-frontend:${{ github.sha }}|g" k8s/05-customer-frontend.yaml
 
       - name: Commit and push
         run: |
           cd manifests
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git add k8s/03-backend.yaml
-          git commit -m "Update backend image to ${{ github.sha }}" || echo "No changes"
+          git add k8s/
+          git commit -m "Update images to ${{ github.sha }}" || echo "No changes"
           git push
