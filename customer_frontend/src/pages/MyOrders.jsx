@@ -140,7 +140,7 @@ function ItemCard({ item: i }) {
               <p className="mt-1 text-xs text-slate-400">
                 {i.site}{i.category ? ` · ${categoryLabel(i.category)}` : ''} · SL {i.quantity} · {money(i)}
               </p>
-              {i.customerNote && <p className="mt-1 text-xs text-amber-700">Ghi chú của bạn: {i.customerNote}</p>}
+              {i.customerNote && <p className="mt-1 text-xs text-amber-700">{i.customerNote}</p>}
             </div>
           </div>
           <StatusBadge status={i.status} />

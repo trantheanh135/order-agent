@@ -127,7 +127,7 @@ export default function Orders() {
                     <div className="min-w-0">
                       <div className="truncate font-medium" title={i.title}>{i.title}</div>
                       <div className="text-xs text-slate-400">{i.site}{i.category ? ` · ${categoryLabel(i.category)}` : ''}</div>
-                      {i.customerNote && <div className="truncate text-xs text-amber-700" title={i.customerNote}>Ghi chú: {i.customerNote}</div>}
+                      {i.customerNote && <div className="truncate text-xs text-amber-700" title={i.customerNote}>Phân loại: {i.customerNote}</div>}
                     </div>
                   </div>
                 </td>
@@ -209,7 +209,7 @@ function Drawer({ item, onSaved, onClose }) {
 
           {item.customerNote && (
             <div className="rounded-lg bg-amber-50 p-3 text-amber-900 ring-1 ring-amber-100">
-              <div className="text-xs font-semibold uppercase tracking-wide text-amber-700">Ghi chú của khách</div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-amber-700">Phân loại / ghi chú từ đơn</div>
               <p className="mt-1 whitespace-pre-wrap">{item.customerNote}</p>
             </div>
           )}
