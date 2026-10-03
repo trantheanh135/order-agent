@@ -10,6 +10,7 @@ import StatusBadge from '../components/StatusBadge'
 import ProgressTracker from '../components/ProgressTracker'
 import Thumb from '../components/Thumb'
 import ChatWidget from '../components/ChatWidget'
+import { GUIDE_URL } from '../config'
 import { FLOW, STATUS_META, categoryLabel, money } from '../components/status'
 
 const FILTERS = ['ALL', ...FLOW, 'CANCELLED']
@@ -103,6 +104,10 @@ export default function MyOrders() {
           <div className="flex items-center justify-between">
             <Logo label="Hàng Về" sub="Đơn hàng của tôi" />
             <div className="flex items-center gap-3 text-sm text-sky-100">
+              <a href={GUIDE_URL} target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-accent-500 px-3 py-1.5 font-semibold text-white shadow hover:bg-accent-600">
+                <Icon name="play" size={16} /> <span className="hidden sm:inline">Video hướng dẫn</span><span className="sm:hidden">Hướng dẫn</span>
+              </a>
               <span className="hidden sm:inline">{user?.name}</span>
               <button onClick={logout} className="inline-flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 ring-1 ring-white/15 hover:bg-white/20">
                 <Icon name="logout" size={15} /> Đăng xuất
@@ -190,7 +195,13 @@ export default function MyOrders() {
               </div>
             ) : (
               <div className="card p-6 text-sm text-slate-600">
-                <p className="mb-3 font-medium text-slate-900">Bạn chưa có sản phẩm nào trong đơn đang soạn.</p>
+                <p className="mb-1 font-medium text-slate-900">Bạn chưa có sản phẩm nào trong đơn đang soạn.</p>
+                <p className="mb-3">
+                  Chưa biết bắt đầu từ đâu?{' '}
+                  <a href={GUIDE_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-semibold text-accent-600 hover:underline">
+                    <Icon name="play" size={14} /> Xem video hướng dẫn đặt hàng
+                  </a>
+                </p>
                 <ol className="grid gap-3 sm:grid-cols-3">
                   {[
                     ['Mở sản phẩm', 'Vào một sản phẩm trên 1688 hoặc Taobao.'],

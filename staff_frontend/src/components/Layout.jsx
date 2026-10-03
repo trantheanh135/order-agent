@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { auth, chatUnread } from '../services/api'
 import Icon from './Icon'
 import Logo from './Logo'
+import { GUIDE_URL } from '../config'
 
 const ROLE_VI = { ADMIN: 'Quản trị viên', STAFF: 'Nhân viên' }
 
@@ -55,6 +56,9 @@ export default function Layout() {
             <NavLink to="/" end className={desktopLink}><Icon name="package" size={18} /> Đơn hàng</NavLink>
             <NavLink to="/chat" className={desktopLink}><Icon name="chat" size={18} /> Tin nhắn {badge}</NavLink>
             {isAdmin && <NavLink to="/staff" className={desktopLink}><Icon name="users" size={18} /> Tài khoản nhân viên</NavLink>}
+            <a href={GUIDE_URL} target="_blank" rel="noopener noreferrer" className={desktopLink({ isActive: false })}>
+              <Icon name="play" size={18} /> Video hướng dẫn
+            </a>
           </nav>
 
           <div className="mt-auto rounded-xl bg-white/10 p-3 text-sm text-white ring-1 ring-white/10 backdrop-blur">

@@ -19,6 +19,7 @@ const PATHS = {
   pin: <><path d="M12 21s7-6.2 7-11.5A7 7 0 005 9.5C5 14.8 12 21 12 21z" /><circle cx="12" cy="9.5" r="2.4" /></>,
   chat: <path d="M4 5h16v11H9.5L4 20.5V5z" />,
   send: <path d="M3 11.5l18-8-8 18-2.2-7.8L3 11.5zM10.8 13.7L21 3.5" />,
+  play: <><circle cx="12" cy="12" r="9" /><path d="M10 8.5l5.5 3.5-5.5 3.5z" /></>,
   inbox: <path d="M3 13l3-8h12l3 8v6H3v-6zM3 13h5l1 2.5h6l1-2.5h5" />,
 }
 
