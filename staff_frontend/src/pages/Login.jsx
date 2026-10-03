@@ -33,7 +33,7 @@ export default function Login() {
   return (
     <AuthShell
       title="Đưa mọi đơn hàng từ giỏ hàng đến tận tay khách."
-      subtitle="Bảng điều khiển cho nhân viên order hộ: xem đơn mới, mua hàng, vận chuyển và theo dõi — tất cả trong một hàng đợi."
+      subtitle="Bảng điều khiển cho nhân viên mua hộ: xem đơn mới, mua hàng, vận chuyển và theo dõi — tất cả trong một hàng đợi."
       bullets={[
         ['cart', 'Xem các sản phẩm khách thêm từ 1688 & Taobao'],
         ['truck', 'Cập nhật trạng thái và mã vận đơn chỉ với một cú nhấp'],

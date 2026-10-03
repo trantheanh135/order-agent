@@ -60,7 +60,7 @@ export default function MyOrders() {
         <div className="absolute inset-0 bg-gradient-to-r from-navy-950/95 via-navy-950/70 to-navy-950/20" />
         <div className="relative mx-auto max-w-5xl px-4 pb-24 pt-5">
           <div className="flex items-center justify-between">
-            <Logo label="Order Agent" sub="Đơn hàng của tôi" />
+            <Logo label="Hàng Về" sub="Đơn hàng của tôi" />
             <div className="flex items-center gap-3 text-sm text-sky-100">
               <span className="hidden sm:inline">{user?.name}</span>
               <button onClick={logout} className="inline-flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 ring-1 ring-white/15 hover:bg-white/20">
@@ -170,7 +170,7 @@ function ItemCard({ item: i }) {
 
 function EmptyState() {
   const steps = [
-    ['Cài tiện ích trình duyệt', 'Cài Order Insight Tracker trên Chrome và đăng nhập bằng tài khoản này.'],
+    ['Cài tiện ích trình duyệt', 'Cài tiện ích Hàng Về trên Chrome và đăng nhập bằng tài khoản này.'],
     ['Duyệt 1688 hoặc Taobao', 'Bấm “Thêm vào giỏ hàng” ở bất kỳ sản phẩm nào như bình thường.'],
     ['Theo dõi hành trình', 'Sản phẩm sẽ hiện ở đây, rồi đi từ khâu mua hàng đến khi giao tận tay.'],
   ]

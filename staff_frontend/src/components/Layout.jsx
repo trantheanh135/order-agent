@@ -36,7 +36,7 @@ export default function Layout() {
         <div className="absolute inset-0 bg-gradient-to-b from-navy-950 via-navy-950/85 to-navy-950/10" />
         <div className="relative z-10 flex h-full flex-col p-4">
           <div className="px-1 py-2">
-            <Logo label="Order Agent" sub="Trang điều hành" />
+            <Logo label="Hàng Về" sub="Trang điều hành" />
           </div>
           <nav className="mt-6 space-y-1">
             <NavLink to="/" end className={desktopLink}><Icon name="package" size={18} /> Đơn hàng</NavLink>
