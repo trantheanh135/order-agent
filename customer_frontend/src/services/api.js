@@ -72,7 +72,13 @@ export const errorMessage = (err) => {
 export const login = (email, password) => api.post('/auth/login', { email, password }).then((r) => r.data)
 export const register = (name, email, password) =>
   api.post('/auth/register', { name, email, password }).then((r) => r.data)
-export const listMine = () => api.get('/cart-items/me').then((r) => r.data)
+// The customer works on ONE open order (status NEW). Staff only see it after confirmCurrentOrder().
+export const getCurrentOrder = () => api.get('/orders/current').then((r) => r.data)
+export const updateCurrentItem = (itemId, quantity) => api.patch(`/orders/current/items/${itemId}`, { quantity }).then((r) => r.data)
+export const removeCurrentItem = (itemId) => api.delete(`/orders/current/items/${itemId}`).then((r) => r.data)
+export const discardCurrentOrder = () => api.delete('/orders/current').then((r) => r.data)
+export const confirmCurrentOrder = () => api.post('/orders/current/confirm').then((r) => r.data)
+export const listMyOrders = () => api.get('/orders/me').then((r) => r.data)
 
 export const STATUSES = ['NEW', 'PURCHASED', 'SHIPPED', 'DELIVERED', 'CANCELLED']
 

@@ -11,10 +11,11 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
+// A product the customer adds to their open order (sent by the browser extension).
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CartItemCreateRequest {
+public class OrderItemRequest {
 
     @NotBlank(message = "site is required")
     private String site;
@@ -28,8 +29,6 @@ public class CartItemCreateRequest {
     private BigDecimal price;
 
     private String category;
-
-    private String clickedLabel;
 
     @Min(value = 1, message = "quantity must be at least 1")
     @Max(value = 99999, message = "quantity is too large")

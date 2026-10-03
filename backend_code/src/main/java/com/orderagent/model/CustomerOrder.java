@@ -1,20 +1,23 @@
 package com.orderagent.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
+// Named CustomerOrder (not Order) so it never collides with the ORDER keyword in JPQL / SQL.
+// A customer has at most one order in status NEW at a time: their open order.
 @Entity
-@Table(name = "cart_items")
-@Data
+@Table(name = "orders")
+@Getter
+@Setter
 @NoArgsConstructor
-@AllArgsConstructor
-public class CartItem {
+public class CustomerOrder {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -25,38 +28,13 @@ public class CartItem {
     @JoinColumn(name = "customer_id", nullable = false)
     private User customer;
 
-    @Column(nullable = false)
-    private String site;
-
-    @Column(name = "product_url", columnDefinition = "TEXT")
-    private String productUrl;
-
-    @Column(nullable = false, columnDefinition = "TEXT")
-    private String title;
-
-    private BigDecimal price;
-
-    @Column(nullable = false)
-    private String currency = "CNY";
-
-    @Column(nullable = false)
-    private Integer quantity = 1;
-
-    private String category;
-
-    @Column(name = "clicked_label")
-    private String clickedLabel;
-
-    // Variant / remarks typed by the customer when placing the order (e.g. "màu đen, size L").
-    @Column(name = "customer_note", columnDefinition = "TEXT")
-    private String customerNote;
-
-    @Column(name = "image_url", columnDefinition = "TEXT")
-    private String imageUrl;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private CartItemStatus status = CartItemStatus.NEW;
+    private OrderStatus status = OrderStatus.NEW;
+
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("createdAt ASC")
+    private List<OrderItem> items = new ArrayList<>();
 
     @Column(name = "staff_notes", columnDefinition = "TEXT")
     private String staffNotes;
@@ -69,6 +47,9 @@ public class CartItem {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Column(name = "confirmed_at")
+    private LocalDateTime confirmedAt;
 
     @Column(name = "purchased_at")
     private LocalDateTime purchasedAt;
@@ -84,7 +65,7 @@ public class CartItem {
         createdAt = LocalDateTime.now();
         updatedAt = createdAt;
         if (status == null) {
-            status = CartItemStatus.NEW;
+            status = OrderStatus.NEW;
         }
     }
 

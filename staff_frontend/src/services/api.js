@@ -70,8 +70,9 @@ export const errorMessage = (err) => {
 }
 
 export const login = (email, password) => api.post('/auth/login', { email, password }).then((r) => r.data)
-export const listItems = () => api.get('/staff/cart-items').then((r) => r.data)
-export const updateItem = (id, patch) => api.patch(`/staff/cart-items/${id}`, patch).then((r) => r.data)
+// Staff only ever receive orders the customer has confirmed (never open ones).
+export const listOrders = () => api.get('/staff/orders').then((r) => r.data)
+export const updateOrder = (id, patch) => api.patch(`/staff/orders/${id}`, patch).then((r) => r.data)
 export const createStaff = (body) => api.post('/staff/users', body).then((r) => r.data)
 
 export const STATUSES = ['NEW', 'PURCHASED', 'SHIPPED', 'DELIVERED', 'CANCELLED']

@@ -1,57 +1,96 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { auth, listMine, errorMessage } from '../services/api'
+import {
+  auth, getCurrentOrder, listMyOrders, updateCurrentItem, removeCurrentItem, discardCurrentOrder,
+  confirmCurrentOrder, errorMessage, fmtDate,
+} from '../services/api'
 import Icon from '../components/Icon'
 import Logo from '../components/Logo'
 import StatusBadge from '../components/StatusBadge'
 import ProgressTracker from '../components/ProgressTracker'
 import Thumb from '../components/Thumb'
-import { STATUS_META, categoryLabel } from '../components/status'
+import { FLOW, STATUS_META, categoryLabel, money } from '../components/status'
 
-const money = (i) => (i.price != null ? `${i.currency || ''} ${i.price}`.trim() : '—')
-const FILTERS = ['ALL', 'NEW', 'PURCHASED', 'SHIPPED', 'DELIVERED', 'CANCELLED']
+const FILTERS = ['ALL', ...FLOW, 'CANCELLED']
 
 export default function MyOrders() {
   const navigate = useNavigate()
   const user = auth.user()
-  const [items, setItems] = useState([])
+  const [current, setCurrent] = useState(null)   // the open order (status NEW)
+  const [orders, setOrders] = useState([])       // orders already sent to us (confirmed and later)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [notice, setNotice] = useState('')
   const [filter, setFilter] = useState('ALL')
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setError('')
     setLoading(true)
     try {
-      setItems(await listMine())
+      const [cur, all] = await Promise.all([getCurrentOrder(), listMyOrders()])
+      setCurrent(cur)
+      setOrders(all.filter((o) => o.status !== 'NEW'))
     } catch (err) {
       setError(errorMessage(err))
     } finally {
       setLoading(false)
     }
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  // Run an action on the open order, then show what the server returned.
+  const act = async (fn, successNotice) => {
+    setBusy(true)
+    setError('')
+    setNotice('')
+    try {
+      setCurrent(await fn())
+      if (successNotice) setNotice(successNotice)
+    } catch (err) {
+      setError(errorMessage(err))
+    } finally {
+      setBusy(false)
+    }
   }
 
-  useEffect(() => { load() }, [])
+  const confirm = async () => {
+    if (!window.confirm('Gửi đơn này cho Hàng Về xử lý? Sau khi xác nhận bạn không sửa được nữa.')) return
+    setBusy(true)
+    setError('')
+    try {
+      await confirmCurrentOrder()
+      setNotice('Đã xác nhận đơn hàng. Nhân viên sẽ xử lý và báo giá cho bạn.')
+      await load()
+    } catch (err) {
+      setError(errorMessage(err))
+    } finally {
+      setBusy(false)
+    }
+  }
 
-  const count = (s) => items.filter((i) => i.status === s).length
+  const count = (...s) => orders.filter((o) => s.includes(o.status)).length
   const stats = [
-    { label: 'Tổng số món', value: items.length, icon: 'package', tile: 'bg-sky-100 text-sky-600' },
-    { label: 'Đang xử lý', value: count('NEW') + count('PURCHASED'), icon: 'cart', tile: 'bg-amber-100 text-amber-600' },
+    { label: 'Tổng số đơn', value: orders.length, icon: 'package', tile: 'bg-sky-100 text-sky-600' },
+    { label: 'Đang xử lý', value: count('CONFIRMED', 'PURCHASED'), icon: 'cart', tile: 'bg-amber-100 text-amber-600' },
     { label: 'Đang vận chuyển', value: count('SHIPPED'), icon: 'truck', tile: 'bg-violet-100 text-violet-600' },
     { label: 'Đã giao', value: count('DELIVERED'), icon: 'warehouse', tile: 'bg-emerald-100 text-emerald-600' },
   ]
 
   const visible = useMemo(
-    () => items
-      .filter((i) => filter === 'ALL' || i.status === filter)
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)),
-    [items, filter]
+    () => orders
+      .filter((o) => filter === 'ALL' || o.status === filter)
+      .sort((a, b) => new Date(b.confirmedAt) - new Date(a.confirmedAt)),
+    [orders, filter]
   )
 
   const logout = () => {
     auth.clear()
     navigate('/login')
   }
+
+  const hasDraft = current && current.itemCount > 0
 
   return (
     <div className="min-h-screen">
@@ -70,7 +109,7 @@ export default function MyOrders() {
             </div>
           </div>
           <h1 className="mt-8 text-3xl font-extrabold tracking-tight text-white">Xin chào {user?.name?.split(' ').slice(-1)[0]} 👋</h1>
-          <p className="mt-1 text-sky-100/80">Đây là tình trạng các kiện hàng của bạn lúc này.</p>
+          <p className="mt-1 text-sky-100/80">Đây là đơn đang soạn và tình trạng các đơn bạn đã gửi.</p>
         </div>
       </div>
 
@@ -88,42 +127,120 @@ export default function MyOrders() {
           ))}
         </div>
 
-        {/* Filters */}
-        <div className="mt-6 flex flex-wrap items-center gap-2">
-          {FILTERS.map((s) => (
-            <button key={s} onClick={() => setFilter(s)}
-              className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition ${
-                filter === s ? 'bg-navy-900 text-white shadow' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50'
-              }`}>
-              {s === 'ALL' ? 'Tất cả' : STATUS_META[s].label}
-            </button>
-          ))}
-          <button onClick={load} disabled={loading} className="btn-ghost ml-auto">
-            <Icon name="refresh" size={15} className={loading ? 'animate-spin' : ''} /> Làm mới
-          </button>
-        </div>
-
         {error && <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700 ring-1 ring-red-100">{error}</p>}
-        {loading && items.length === 0 && <p className="mt-10 text-center text-slate-400">Đang tải đơn hàng của bạn…</p>}
+        {notice && <p className="mt-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800 ring-1 ring-emerald-100">{notice}</p>}
+        {loading && !current && <p className="mt-10 text-center text-slate-400">Đang tải đơn hàng của bạn…</p>}
 
-        {!loading && items.length === 0 && !error && <EmptyState />}
-        {!loading && items.length > 0 && visible.length === 0 && (
-          <p className="mt-10 text-center text-slate-400">Không có món hàng nào ở trạng thái này.</p>
+        {/* ---- The open order ---- */}
+        {!loading && (
+          <section className="mt-6">
+            <div className="mb-2 flex items-center gap-3">
+              <h2 className="text-lg font-bold">Đơn đang soạn</h2>
+              <StatusBadge status="NEW" />
+              <button onClick={load} disabled={loading || busy} className="btn-ghost ml-auto">
+                <Icon name="refresh" size={15} className={loading ? 'animate-spin' : ''} /> Làm mới
+              </button>
+            </div>
+
+            {hasDraft ? (
+              <div className="card overflow-hidden border-2 border-dashed border-slate-300">
+                <p className="border-b bg-slate-50 px-5 py-2.5 text-sm text-slate-600">
+                  Đơn này <b>chưa gửi</b> cho nhân viên. Bạn có thể thêm sản phẩm từ tiện ích Hàng Về trên 1688/Taobao, rồi bấm <b>Xác nhận đặt hàng</b> khi xong.
+                </p>
+                <ul className="divide-y">
+                  {current.items.map((i) => (
+                    <li key={i.id} className="flex gap-3 p-4 text-sm">
+                      <Thumb url={i.imageUrl} size={64} />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold leading-snug">{i.title}</p>
+                        <p className="mt-0.5 text-xs text-slate-400">{i.site}{i.category ? ` · ${categoryLabel(i.category)}` : ''}</p>
+                        {i.customerNote && <p className="mt-1 text-xs text-amber-700">{i.customerNote}</p>}
+                        {i.url && /^https?:\/\//.test(i.url) && (
+                          <a href={i.url} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-accent-600 hover:underline">
+                            Trang sản phẩm <Icon name="external" size={12} />
+                          </a>
+                        )}
+                      </div>
+                      <div className="flex shrink-0 flex-col items-end gap-2">
+                        <div className="font-semibold">{i.price != null ? money(i.price * i.quantity) : <span className="text-xs font-normal text-slate-400">chưa có giá</span>}</div>
+                        <div className="flex items-center gap-1">
+                          <button disabled={busy || i.quantity <= 1} onClick={() => act(() => updateCurrentItem(i.id, i.quantity - 1))}
+                            className="h-8 w-8 rounded-lg border bg-white text-lg leading-none hover:bg-slate-50 disabled:opacity-40" aria-label="Giảm">−</button>
+                          <span className="w-10 text-center font-semibold">{i.quantity}</span>
+                          <button disabled={busy} onClick={() => act(() => updateCurrentItem(i.id, i.quantity + 1))}
+                            className="h-8 w-8 rounded-lg border bg-white text-lg leading-none hover:bg-slate-50 disabled:opacity-40" aria-label="Tăng">+</button>
+                        </div>
+                        <button disabled={busy} onClick={() => act(() => removeCurrentItem(i.id))} className="text-xs font-medium text-red-600 hover:underline">Xóa khỏi đơn</button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+                <div className="flex flex-wrap items-center gap-3 border-t bg-slate-50 px-5 py-4">
+                  <div className="text-sm">
+                    <div className="text-slate-500">{current.itemCount} sản phẩm · {current.totalQuantity} cái</div>
+                    <div className="text-lg font-bold">Tạm tính: {money(current.estimatedTotal)}</div>
+                    {current.unpricedItems > 0 && <div className="text-xs text-amber-600">{current.unpricedItems} sản phẩm chưa có giá, nhân viên sẽ báo giá.</div>}
+                  </div>
+                  <div className="ml-auto flex gap-2">
+                    <button disabled={busy} onClick={() => window.confirm('Xóa toàn bộ đơn đang soạn?') && act(discardCurrentOrder, 'Đã xóa đơn đang soạn.')} className="btn-ghost">Xóa đơn</button>
+                    <button disabled={busy} onClick={confirm} className="btn-primary">Xác nhận đặt hàng</button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="card p-6 text-sm text-slate-600">
+                <p className="mb-3 font-medium text-slate-900">Bạn chưa có sản phẩm nào trong đơn đang soạn.</p>
+                <ol className="grid gap-3 sm:grid-cols-3">
+                  {[
+                    ['Mở sản phẩm', 'Vào một sản phẩm trên 1688 hoặc Taobao.'],
+                    ['Thêm vào đơn', 'Chọn số lượng/phân loại như bình thường, rồi bấm “Thêm vào đơn” ở nút nổi Hàng Về. Thêm được nhiều sản phẩm.'],
+                    ['Xác nhận', 'Xem lại đơn ngay trong tiện ích, rồi bấm “Xác nhận đặt hàng”.'],
+                  ].map(([t, d], n) => (
+                    <li key={t} className="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-100">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent-500 text-sm font-bold text-white">{n + 1}</span>
+                      <p className="mt-2 font-semibold text-slate-900">{t}</p>
+                      <p className="mt-1 text-slate-500">{d}</p>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+          </section>
         )}
 
-        <ul className="mt-4 space-y-4">
-          {visible.map((i) => <ItemCard key={i.id} item={i} />)}
-        </ul>
+        {/* ---- Orders already sent ---- */}
+        {!loading && (
+          <section className="mt-8">
+            <h2 className="mb-2 text-lg font-bold">Đơn đã gửi</h2>
+            <div className="flex flex-wrap items-center gap-2">
+              {FILTERS.map((s) => (
+                <button key={s} onClick={() => setFilter(s)}
+                  className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition ${
+                    filter === s ? 'bg-navy-900 text-white shadow' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50'
+                  }`}>
+                  {s === 'ALL' ? 'Tất cả' : STATUS_META[s].label}
+                </button>
+              ))}
+            </div>
+
+            {orders.length === 0 && <p className="mt-6 text-center text-slate-400">Bạn chưa gửi đơn nào.</p>}
+            {orders.length > 0 && visible.length === 0 && <p className="mt-6 text-center text-slate-400">Không có đơn nào ở trạng thái này.</p>}
+
+            <ul className="mt-4 space-y-4">
+              {visible.map((o) => <OrderCard key={o.id} order={o} />)}
+            </ul>
+          </section>
+        )}
       </main>
     </div>
   )
 }
 
-function ItemCard({ item: i }) {
+function OrderCard({ order: o }) {
   const [copied, setCopied] = useState(false)
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(i.trackingNumber)
+      await navigator.clipboard.writeText(o.trackingNumber)
       setCopied(true)
       setTimeout(() => setCopied(false), 1500)
     } catch { /* clipboard unavailable on plain http — ignore */ }
@@ -133,66 +250,46 @@ function ItemCard({ item: i }) {
     <li className="card animate-riseIn overflow-hidden">
       <div className="p-5">
         <div className="flex items-start justify-between gap-3">
-          <div className="flex min-w-0 gap-3">
-            <Thumb url={i.imageUrl} size={56} />
-            <div className="min-w-0">
-              <p className="font-semibold leading-snug">{i.title}</p>
-              <p className="mt-1 text-xs text-slate-400">
-                {i.site}{i.category ? ` · ${categoryLabel(i.category)}` : ''} · SL {i.quantity} · {money(i)}
-              </p>
-              {i.customerNote && <p className="mt-1 text-xs text-amber-700">{i.customerNote}</p>}
-            </div>
+          <div>
+            <p className="font-mono text-sm font-bold text-slate-700">Đơn #{o.code}</p>
+            <p className="text-xs text-slate-400">Xác nhận lúc {fmtDate(o.confirmedAt)} · {o.itemCount} sản phẩm · {o.totalQuantity} cái</p>
           </div>
-          <StatusBadge status={i.status} />
+          <StatusBadge status={o.status} />
         </div>
 
-        <div className="mt-5"><ProgressTracker item={i} /></div>
+        <ul className="mt-3 divide-y rounded-lg border">
+          {o.items.map((i) => (
+            <li key={i.id} className="flex gap-3 p-3 text-sm">
+              <Thumb url={i.imageUrl} size={44} />
+              <div className="min-w-0 flex-1">
+                <p className="font-medium leading-snug">{i.title}</p>
+                {i.customerNote && <p className="text-xs text-amber-700">{i.customerNote}</p>}
+              </div>
+              <div className="shrink-0 text-right text-xs text-slate-500">× {i.quantity}<div>{i.price != null ? money(i.price) : '—'}</div></div>
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-3 flex items-center justify-between text-sm">
+          <span className="text-slate-500">Tạm tính</span>
+          <span className="font-bold">{money(o.estimatedTotal)}</span>
+        </div>
+
+        <div className="mt-5"><ProgressTracker item={o} /></div>
       </div>
 
-      {(i.trackingNumber || (i.url && /^https?:\/\//.test(i.url))) && (
+      {o.trackingNumber && (
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t bg-slate-50/70 px-5 py-3 text-sm">
-          {i.trackingNumber && (
-            <div className="flex items-center gap-2">
-              <Icon name="pin" size={16} className="text-accent-600" />
-              <span className="text-slate-500">Mã vận đơn</span>
-              <span className="font-mono font-semibold">{i.trackingNumber}</span>
-              <button onClick={copy} className="rounded p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700" title="Sao chép">
-                <Icon name={copied ? 'check' : 'copy'} size={14} />
-              </button>
-            </div>
-          )}
-          {i.url && /^https?:\/\//.test(i.url) && (
-            <a href={i.url} target="_blank" rel="noopener noreferrer"
-              className="ml-auto inline-flex items-center gap-1.5 font-medium text-accent-600 hover:underline">
-              Trang sản phẩm <Icon name="external" size={14} />
-            </a>
-          )}
+          <div className="flex items-center gap-2">
+            <Icon name="pin" size={16} className="text-accent-600" />
+            <span className="text-slate-500">Mã vận đơn</span>
+            <span className="font-mono font-semibold">{o.trackingNumber}</span>
+            <button onClick={copy} className="rounded p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700" title="Sao chép">
+              <Icon name={copied ? 'check' : 'copy'} size={14} />
+            </button>
+          </div>
         </div>
       )}
     </li>
-  )
-}
-
-function EmptyState() {
-  const steps = [
-    ['Cài tiện ích trình duyệt', 'Cài tiện ích Hàng Về trên Chrome và đăng nhập bằng tài khoản này.'],
-    ['Duyệt 1688 hoặc Taobao', 'Bấm “Thêm vào giỏ hàng” ở bất kỳ sản phẩm nào như bình thường.'],
-    ['Theo dõi hành trình', 'Sản phẩm sẽ hiện ở đây, rồi đi từ khâu mua hàng đến khi giao tận tay.'],
-  ]
-  return (
-    <div className="card mt-6 p-8 text-center">
-      <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-100 text-sky-600"><Icon name="inbox" size={28} /></span>
-      <h2 className="mt-3 text-lg font-bold">Chưa có món hàng nào</h2>
-      <p className="text-sm text-slate-500">Bắt đầu chỉ với ba bước:</p>
-      <ol className="mx-auto mt-6 grid max-w-3xl gap-4 text-left sm:grid-cols-3">
-        {steps.map(([t, d], n) => (
-          <li key={t} className="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-100">
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent-500 text-sm font-bold text-white">{n + 1}</span>
-            <p className="mt-2 font-semibold">{t}</p>
-            <p className="mt-1 text-sm text-slate-500">{d}</p>
-          </li>
-        ))}
-      </ol>
-    </div>
   )
 }
