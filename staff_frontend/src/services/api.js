@@ -75,6 +75,13 @@ export const listOrders = () => api.get('/staff/orders').then((r) => r.data)
 export const updateOrder = (id, patch) => api.patch(`/staff/orders/${id}`, patch).then((r) => r.data)
 export const createStaff = (body) => api.post('/staff/users', body).then((r) => r.data)
 
+// Support chat inbox (shared by all staff / admin). `after` = polling cursor; markRead = thread is open.
+export const chatInbox = () => api.get('/staff/chat/conversations').then((r) => r.data)
+export const chatThread = (id, after, markRead) =>
+  api.get(`/staff/chat/conversations/${id}/messages`, { params: { ...(after ? { after } : {}), markRead: !!markRead } }).then((r) => r.data)
+export const chatSend = (id, content) => api.post(`/staff/chat/conversations/${id}/messages`, { content }).then((r) => r.data)
+export const chatUnread = () => api.get('/staff/chat/unread').then((r) => r.data.unread)
+
 export const STATUSES = ['NEW', 'PURCHASED', 'SHIPPED', 'DELIVERED', 'CANCELLED']
 
 // Backend sends LocalDateTime (no zone) in UTC.

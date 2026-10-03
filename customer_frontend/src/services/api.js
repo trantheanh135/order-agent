@@ -80,6 +80,12 @@ export const discardCurrentOrder = () => api.delete('/orders/current').then((r) 
 export const confirmCurrentOrder = () => api.post('/orders/current/confirm').then((r) => r.data)
 export const listMyOrders = () => api.get('/orders/me').then((r) => r.data)
 
+// Support chat with the Hàng Về team. `after` = cursor for polling; markRead = the chat window is open.
+export const chatThread = (after, markRead) =>
+  api.get('/chat', { params: { ...(after ? { after } : {}), markRead: !!markRead } }).then((r) => r.data)
+export const chatSend = (content) => api.post('/chat/messages', { content }).then((r) => r.data)
+export const chatUnread = () => api.get('/chat/unread').then((r) => r.data.unread)
+
 export const STATUSES = ['NEW', 'PURCHASED', 'SHIPPED', 'DELIVERED', 'CANCELLED']
 
 // Backend sends LocalDateTime (no zone) in UTC.

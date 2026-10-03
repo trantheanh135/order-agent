@@ -1,5 +1,6 @@
+import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { auth } from '../services/api'
+import { auth, chatUnread } from '../services/api'
 import Icon from './Icon'
 import Logo from './Logo'
 
@@ -19,6 +20,18 @@ export default function Layout() {
   const navigate = useNavigate()
   const user = auth.user()
   const isAdmin = user?.role === 'ADMIN'
+
+  // Number of conversations waiting for a reply, shown next to "Tin nhắn".
+  const [unreadChats, setUnreadChats] = useState(0)
+  useEffect(() => {
+    const check = () => chatUnread().then(setUnreadChats).catch(() => {})
+    check()
+    const id = setInterval(check, 10000)
+    return () => clearInterval(id)
+  }, [])
+  const badge = unreadChats > 0 && (
+    <span className="ml-auto flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-accent-500 px-1 text-[11px] font-bold text-white">{unreadChats}</span>
+  )
 
   const logout = () => {
     auth.clear()
@@ -40,6 +53,7 @@ export default function Layout() {
           </div>
           <nav className="mt-6 space-y-1">
             <NavLink to="/" end className={desktopLink}><Icon name="package" size={18} /> Đơn hàng</NavLink>
+            <NavLink to="/chat" className={desktopLink}><Icon name="chat" size={18} /> Tin nhắn {badge}</NavLink>
             {isAdmin && <NavLink to="/staff" className={desktopLink}><Icon name="users" size={18} /> Tài khoản nhân viên</NavLink>}
           </nav>
 
@@ -62,6 +76,7 @@ export default function Layout() {
           <Logo size={32} />
           <nav className="ml-auto flex gap-1">
             <NavLink to="/" end className={mobileLink}><Icon name="package" size={16} /> Đơn hàng</NavLink>
+            <NavLink to="/chat" className={mobileLink}><Icon name="chat" size={16} /> Tin nhắn {unreadChats > 0 && <b className="rounded-full bg-accent-500 px-1.5 text-[11px] text-white">{unreadChats}</b>}</NavLink>
             {isAdmin && <NavLink to="/staff" className={mobileLink}><Icon name="users" size={16} /> Nhân sự</NavLink>}
             <button onClick={logout} className="px-2 text-sky-100/70" aria-label="Đăng xuất"><Icon name="logout" size={18} /></button>
           </nav>

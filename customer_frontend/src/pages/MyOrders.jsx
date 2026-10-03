@@ -9,6 +9,7 @@ import Logo from '../components/Logo'
 import StatusBadge from '../components/StatusBadge'
 import ProgressTracker from '../components/ProgressTracker'
 import Thumb from '../components/Thumb'
+import ChatWidget from '../components/ChatWidget'
 import { FLOW, STATUS_META, categoryLabel, money } from '../components/status'
 
 const FILTERS = ['ALL', ...FLOW, 'CANCELLED']
@@ -232,6 +233,7 @@ export default function MyOrders() {
           </section>
         )}
       </main>
+      <ChatWidget />
     </div>
   )
 }

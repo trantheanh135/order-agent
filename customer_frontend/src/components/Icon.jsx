@@ -17,6 +17,8 @@ const PATHS = {
   copy: <><rect x="8" y="8" width="12" height="12" rx="2" /><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2" /></>,
   arrow: <path d="M5 12h14M13 6l6 6-6 6" />,
   pin: <><path d="M12 21s7-6.2 7-11.5A7 7 0 005 9.5C5 14.8 12 21 12 21z" /><circle cx="12" cy="9.5" r="2.4" /></>,
+  chat: <path d="M4 5h16v11H9.5L4 20.5V5z" />,
+  send: <path d="M3 11.5l18-8-8 18-2.2-7.8L3 11.5zM10.8 13.7L21 3.5" />,
   inbox: <path d="M3 13l3-8h12l3 8v6H3v-6zM3 13h5l1 2.5h6l1-2.5h5" />,
 }
 
