@@ -27,6 +27,8 @@ public class CartItemResponse {
     private CartItemStatus status;
     private String staffNotes;
     private String trackingNumber;
+    private String customerNote;
+    private String imageUrl;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime purchasedAt;
@@ -50,6 +52,8 @@ public class CartItemResponse {
                 .status(item.getStatus())
                 .staffNotes(item.getStaffNotes())
                 .trackingNumber(item.getTrackingNumber())
+                .customerNote(item.getCustomerNote())
+                .imageUrl(item.getImageUrl())
                 .createdAt(item.getCreatedAt())
                 .updatedAt(item.getUpdatedAt())
                 .purchasedAt(item.getPurchasedAt())

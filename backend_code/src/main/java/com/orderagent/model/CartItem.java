@@ -47,6 +47,13 @@ public class CartItem {
     @Column(name = "clicked_label")
     private String clickedLabel;
 
+    // Variant / remarks typed by the customer when placing the order (e.g. "màu đen, size L").
+    @Column(name = "customer_note", columnDefinition = "TEXT")
+    private String customerNote;
+
+    @Column(name = "image_url", columnDefinition = "TEXT")
+    private String imageUrl;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private CartItemStatus status = CartItemStatus.NEW;

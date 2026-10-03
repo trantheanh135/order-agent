@@ -3,6 +3,7 @@ import { listItems, updateItem, errorMessage, fmtDate } from '../services/api'
 import Icon from '../components/Icon'
 import StatusBadge from '../components/StatusBadge'
 import ProgressTracker from '../components/ProgressTracker'
+import Thumb from '../components/Thumb'
 import { FLOW, STATUS_META, nextStatus, categoryLabel } from '../components/status'
 
 const ALL_STATUSES = [...FLOW, 'CANCELLED']
@@ -120,9 +121,15 @@ export default function Orders() {
             {visible.map((i) => (
               <tr key={i.id} onClick={() => setSelectedId(i.id)}
                 className={`cursor-pointer border-b border-slate-100 last:border-0 transition hover:bg-sky-50/60 ${i.id === selectedId ? 'bg-sky-50' : ''}`}>
-                <td className="max-w-xs px-4 py-3">
-                  <div className="truncate font-medium" title={i.title}>{i.title}</div>
-                  <div className="text-xs text-slate-400">{i.site}{i.category ? ` · ${categoryLabel(i.category)}` : ''}</div>
+                <td className="max-w-sm px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <Thumb url={i.imageUrl} />
+                    <div className="min-w-0">
+                      <div className="truncate font-medium" title={i.title}>{i.title}</div>
+                      <div className="text-xs text-slate-400">{i.site}{i.category ? ` · ${categoryLabel(i.category)}` : ''}</div>
+                      {i.customerNote && <div className="truncate text-xs text-amber-700" title={i.customerNote}>Ghi chú: {i.customerNote}</div>}
+                    </div>
+                  </div>
                 </td>
                 <td className="whitespace-nowrap px-4 py-3">
                   <div>{i.customerName}</div>
@@ -200,11 +207,20 @@ function Drawer({ item, onSaved, onClose }) {
         <div className="flex-1 space-y-5 overflow-y-auto p-5 text-sm">
           <div className="card p-4"><ProgressTracker item={item} /></div>
 
+          {item.customerNote && (
+            <div className="rounded-lg bg-amber-50 p-3 text-amber-900 ring-1 ring-amber-100">
+              <div className="text-xs font-semibold uppercase tracking-wide text-amber-700">Ghi chú của khách</div>
+              <p className="mt-1 whitespace-pre-wrap">{item.customerNote}</p>
+            </div>
+          )}
+
           {next && item.status !== 'CANCELLED' && (
             <button onClick={() => save(next)} disabled={busy} className="btn-primary w-full py-2.5">
               Chuyển sang “{STATUS_META[next].label}” <Icon name="arrow" size={16} />
             </button>
           )}
+
+          {item.imageUrl && <Thumb url={item.imageUrl} size={96} />}
 
           <dl className="grid grid-cols-[6.5rem_1fr] gap-y-2">
             <dt className="text-slate-400">Khách hàng</dt><dd>{item.customerName}<div className="text-xs text-slate-400">{item.customerEmail}</div></dd>

@@ -38,6 +38,8 @@ public class CartItemService {
         item.setCategory(request.getCategory() != null ? request.getCategory() : "Uncategorized");
         item.setClickedLabel(request.getClickedLabel());
         item.setQuantity(request.getQuantity() != null ? request.getQuantity() : 1);
+        item.setCustomerNote(request.getCustomerNote());
+        item.setImageUrl(request.getImageUrl());
         item.setStatus(CartItemStatus.NEW);
 
         cartItemRepository.save(item);

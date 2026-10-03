@@ -5,6 +5,7 @@ import Icon from '../components/Icon'
 import Logo from '../components/Logo'
 import StatusBadge from '../components/StatusBadge'
 import ProgressTracker from '../components/ProgressTracker'
+import Thumb from '../components/Thumb'
 import { STATUS_META, categoryLabel } from '../components/status'
 
 const money = (i) => (i.price != null ? `${i.currency || ''} ${i.price}`.trim() : '—')
@@ -132,11 +133,15 @@ function ItemCard({ item: i }) {
     <li className="card animate-riseIn overflow-hidden">
       <div className="p-5">
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="font-semibold leading-snug">{i.title}</p>
-            <p className="mt-1 text-xs text-slate-400">
-              {i.site}{i.category ? ` · ${categoryLabel(i.category)}` : ''} · SL {i.quantity} · {money(i)}
-            </p>
+          <div className="flex min-w-0 gap-3">
+            <Thumb url={i.imageUrl} size={56} />
+            <div className="min-w-0">
+              <p className="font-semibold leading-snug">{i.title}</p>
+              <p className="mt-1 text-xs text-slate-400">
+                {i.site}{i.category ? ` · ${categoryLabel(i.category)}` : ''} · SL {i.quantity} · {money(i)}
+              </p>
+              {i.customerNote && <p className="mt-1 text-xs text-amber-700">Ghi chú của bạn: {i.customerNote}</p>}
+            </div>
           </div>
           <StatusBadge status={i.status} />
         </div>
