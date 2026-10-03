@@ -16,7 +16,7 @@ export default function Staff() {
     setBusy(true)
     try {
       await createStaff(form)
-      setMsg({ ok: true, text: `Created ${form.role} account for ${form.email}` })
+      setMsg({ ok: true, text: `Đã tạo tài khoản ${form.role === 'ADMIN' ? 'quản trị viên' : 'nhân viên'} cho ${form.email}` })
       setForm(EMPTY)
     } catch (err) {
       setMsg({ ok: false, text: errorMessage(err) })
@@ -30,8 +30,8 @@ export default function Staff() {
       <div className="mb-6 flex items-center gap-3">
         <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-navy-900 text-accent-400"><Icon name="users" /></span>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Staff accounts</h1>
-          <p className="text-sm text-slate-500">Create logins for the people who process orders.</p>
+          <h1 className="text-2xl font-bold tracking-tight">Tài khoản nhân viên</h1>
+          <p className="text-sm text-slate-500">Tạo tài khoản đăng nhập cho những người xử lý đơn hàng.</p>
         </div>
       </div>
 
@@ -41,23 +41,23 @@ export default function Staff() {
             {msg.text}
           </p>
         )}
-        <label className="block text-sm font-medium text-navy-800">Name
+        <label className="block text-sm font-medium text-navy-800">Họ tên
           <input required value={form.name} onChange={set('name')} className="field" />
         </label>
         <label className="block text-sm font-medium text-navy-800">Email
           <input type="email" required value={form.email} onChange={set('email')} className="field" />
         </label>
-        <label className="block text-sm font-medium text-navy-800">Password <span className="font-normal text-slate-400">(min 8 characters)</span>
+        <label className="block text-sm font-medium text-navy-800">Mật khẩu <span className="font-normal text-slate-400">(tối thiểu 8 ký tự)</span>
           <input type="password" required minLength={8} value={form.password} onChange={set('password')}
             className="field" autoComplete="new-password" />
         </label>
-        <label className="block text-sm font-medium text-navy-800">Role
+        <label className="block text-sm font-medium text-navy-800">Vai trò
           <select value={form.role} onChange={set('role')} className="field">
-            <option value="STAFF">STAFF — process orders</option>
-            <option value="ADMIN">ADMIN — also manage accounts</option>
+            <option value="STAFF">Nhân viên — xử lý đơn hàng</option>
+            <option value="ADMIN">Quản trị viên — có thêm quyền quản lý tài khoản</option>
           </select>
         </label>
-        <button disabled={busy} className="btn-primary">{busy ? 'Creating…' : 'Create account'}</button>
+        <button disabled={busy} className="btn-primary">{busy ? 'Đang tạo…' : 'Tạo tài khoản'}</button>
       </form>
     </div>
   )

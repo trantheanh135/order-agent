@@ -40,8 +40,34 @@ api.interceptors.response.use(
   }
 )
 
-export const errorMessage = (err) =>
-  err.response?.data?.message || err.response?.data?.error || err.message || 'Something went wrong'
+const VI_MESSAGES = {
+  'Invalid email or password': 'Email hoặc mật khẩu không đúng',
+  'Email already registered': 'Email này đã được đăng ký',
+  'Email is required': 'Vui lòng nhập email',
+  'Email must be valid': 'Email không hợp lệ',
+  'Name is required': 'Vui lòng nhập họ tên',
+  'Password is required': 'Vui lòng nhập mật khẩu',
+  'Password must be at least 8 characters': 'Mật khẩu phải có ít nhất 8 ký tự',
+  'Use /api/auth/register for customer accounts': 'Tài khoản khách hàng phải đăng ký ở trang khách hàng',
+}
+
+const VI_BY_STATUS = {
+  400: 'Dữ liệu không hợp lệ, vui lòng kiểm tra lại.',
+  401: 'Phiên đăng nhập không hợp lệ, vui lòng đăng nhập lại.',
+  403: 'Bạn không có quyền thực hiện thao tác này.',
+  404: 'Không tìm thấy dữ liệu.',
+  409: 'Dữ liệu bị trùng.',
+}
+
+// Backend messages are English; the UI always shows Vietnamese.
+export const errorMessage = (err) => {
+  if (!err.response) return 'Không thể kết nối tới máy chủ. Vui lòng thử lại.'
+  const { status, data } = err.response
+  const raw = data?.validationErrors?.[0]?.message || data?.message
+  if (raw && VI_MESSAGES[raw]) return VI_MESSAGES[raw]
+  if (VI_BY_STATUS[status]) return VI_BY_STATUS[status]
+  return status >= 500 ? 'Máy chủ gặp lỗi, vui lòng thử lại sau.' : 'Đã xảy ra lỗi, vui lòng thử lại.'
+}
 
 export const login = (email, password) => api.post('/auth/login', { email, password }).then((r) => r.data)
 export const register = (name, email, password) =>
@@ -54,5 +80,5 @@ export const STATUSES = ['NEW', 'PURCHASED', 'SHIPPED', 'DELIVERED', 'CANCELLED'
 export const fmtDate = (s) => {
   if (!s) return '—'
   const d = new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(s) ? s : s + 'Z')
-  return d.toLocaleString()
+  return d.toLocaleString('vi-VN')
 }

@@ -3,13 +3,15 @@ import { auth } from '../services/api'
 import Icon from './Icon'
 import Logo from './Logo'
 
+const ROLE_VI = { ADMIN: 'Quản trị viên', STAFF: 'Nhân viên' }
+
 const desktopLink = ({ isActive }) =>
   `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
     isActive ? 'bg-white/10 text-white ring-1 ring-white/10' : 'text-sky-100/70 hover:bg-white/5 hover:text-white'
   }`
 
 const mobileLink = ({ isActive }) =>
-  `flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium ${
+  `flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ${
     isActive ? 'bg-white/15 text-white' : 'text-sky-100/70'
   }`
 
@@ -34,20 +36,20 @@ export default function Layout() {
         <div className="absolute inset-0 bg-gradient-to-b from-navy-950 via-navy-950/85 to-navy-950/10" />
         <div className="relative z-10 flex h-full flex-col p-4">
           <div className="px-1 py-2">
-            <Logo label="Order Agent" sub="Logistics console" />
+            <Logo label="Order Agent" sub="Trang điều hành" />
           </div>
           <nav className="mt-6 space-y-1">
-            <NavLink to="/" end className={desktopLink}><Icon name="package" size={18} /> Orders</NavLink>
-            {isAdmin && <NavLink to="/staff" className={desktopLink}><Icon name="users" size={18} /> Staff accounts</NavLink>}
+            <NavLink to="/" end className={desktopLink}><Icon name="package" size={18} /> Đơn hàng</NavLink>
+            {isAdmin && <NavLink to="/staff" className={desktopLink}><Icon name="users" size={18} /> Tài khoản nhân viên</NavLink>}
           </nav>
 
           <div className="mt-auto rounded-xl bg-white/10 p-3 text-sm text-white ring-1 ring-white/10 backdrop-blur">
             <div className="truncate font-semibold">{user?.name}</div>
             <div className="truncate text-xs text-sky-100/70">{user?.email}</div>
             <div className="mt-2 flex items-center justify-between">
-              <span className="rounded-full bg-accent-500/20 px-2 py-0.5 text-[11px] font-semibold text-accent-400">{user?.role}</span>
+              <span className="rounded-full bg-accent-500/20 px-2 py-0.5 text-[11px] font-semibold text-accent-400">{ROLE_VI[user?.role] || user?.role}</span>
               <button onClick={logout} className="flex items-center gap-1 text-xs text-sky-100/80 hover:text-white">
-                <Icon name="logout" size={14} /> Sign out
+                <Icon name="logout" size={14} /> Đăng xuất
               </button>
             </div>
           </div>
@@ -57,11 +59,11 @@ export default function Layout() {
       <div className="min-w-0 flex-1">
         {/* Top bar (mobile) */}
         <header className="flex items-center gap-3 bg-navy-950 px-4 py-3 md:hidden">
-          <Logo size={30} label="Order Agent" />
+          <Logo size={32} />
           <nav className="ml-auto flex gap-1">
-            <NavLink to="/" end className={mobileLink}><Icon name="package" size={16} /> Orders</NavLink>
-            {isAdmin && <NavLink to="/staff" className={mobileLink}><Icon name="users" size={16} /> Staff</NavLink>}
-            <button onClick={logout} className="px-2 text-sky-100/70" aria-label="Sign out"><Icon name="logout" size={18} /></button>
+            <NavLink to="/" end className={mobileLink}><Icon name="package" size={16} /> Đơn hàng</NavLink>
+            {isAdmin && <NavLink to="/staff" className={mobileLink}><Icon name="users" size={16} /> Nhân sự</NavLink>}
+            <button onClick={logout} className="px-2 text-sky-100/70" aria-label="Đăng xuất"><Icon name="logout" size={18} /></button>
           </nav>
         </header>
 
