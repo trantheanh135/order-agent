@@ -18,7 +18,9 @@ export const auth = {
   },
 }
 
-const api = axios.create({ baseURL: `${import.meta.env.BASE_URL}api` })
+// Default: relative to the app's base (its nginx proxies to the backend). On Vercel, VITE_API_URL is the
+// backend's public ngrok URL; API calls then carry ngrok-skip-browser-warning, so no ngrok warning page.
+const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || `${import.meta.env.BASE_URL}api` })
 
 api.interceptors.request.use((config) => {
   const token = auth.token()
