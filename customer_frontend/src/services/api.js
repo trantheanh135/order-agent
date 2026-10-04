@@ -80,6 +80,11 @@ export const discardCurrentOrder = () => api.delete('/orders/current').then((r) 
 export const confirmCurrentOrder = () => api.post('/orders/current/confirm').then((r) => r.data)
 export const listMyOrders = () => api.get('/orders/me').then((r) => r.data)
 
+// Payment: after confirming, the order waits for payment (QR). "I have paid" makes it visible to staff.
+export const getPaymentInfo = () => api.get('/payment-info').then((r) => r.data)
+export const reportPaid = (orderId) => api.post(`/orders/${orderId}/paid`).then((r) => r.data)
+export const cancelUnpaid = (orderId) => api.post(`/orders/${orderId}/cancel`).then((r) => r.data)
+
 // Support chat with the Hàng Về team. `after` = cursor for polling; markRead = the chat window is open.
 export const chatThread = (after, markRead) =>
   api.get('/chat', { params: { ...(after ? { after } : {}), markRead: !!markRead } }).then((r) => r.data)

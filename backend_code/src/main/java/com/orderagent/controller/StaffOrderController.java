@@ -4,6 +4,7 @@ import com.orderagent.dto.OrderResponse;
 import com.orderagent.dto.OrderUpdateRequest;
 import com.orderagent.model.OrderStatus;
 import com.orderagent.service.OrderService;
+import com.orderagent.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,6 +32,6 @@ public class StaffOrderController {
 
     @PatchMapping("/{id}")
     public OrderResponse update(@PathVariable UUID id, @RequestBody OrderUpdateRequest request) {
-        return orderService.updateByStaff(id, request);
+        return orderService.updateByStaff(SecurityUtil.getCurrentUserId(), id, request);
     }
 }

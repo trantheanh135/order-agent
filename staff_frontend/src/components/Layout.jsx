@@ -55,6 +55,7 @@ export default function Layout() {
           <nav className="mt-6 space-y-1">
             <NavLink to="/" end className={desktopLink}><Icon name="package" size={18} /> Đơn hàng</NavLink>
             <NavLink to="/chat" className={desktopLink}><Icon name="chat" size={18} /> Tin nhắn {badge}</NavLink>
+            {isAdmin && <NavLink to="/payment" className={desktopLink}><Icon name="qr" size={18} /> Thanh toán</NavLink>}
             {isAdmin && <NavLink to="/staff" className={desktopLink}><Icon name="users" size={18} /> Tài khoản nhân viên</NavLink>}
             <a href={GUIDE_URL} target="_blank" rel="noopener noreferrer" className={desktopLink({ isActive: false })}>
               <Icon name="play" size={18} /> Video hướng dẫn

@@ -30,13 +30,18 @@ public class OrderResponse {
     private String currency;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private LocalDateTime confirmedAt;
+    private LocalDateTime confirmedAt;   // the customer confirmed the order (payment is now due)
+    private LocalDateTime paidAt;        // the customer reported the payment (order becomes visible to staff)
+    private String paymentCode;          // transfer content the customer must use, e.g. "HVA1B2C3D4"
+    private boolean paymentVerified;     // staff checked that the money arrived
+    private LocalDateTime paymentVerifiedAt;
     private LocalDateTime purchasedAt;
     private LocalDateTime shippedAt;
     private LocalDateTime deliveredAt;
     private String trackingNumber;
     // Only populated on staff-facing responses.
     private String staffNotes;
+    private String paymentVerifiedBy;
     private String customerName;
     private String customerEmail;
 
@@ -77,12 +82,17 @@ public class OrderResponse {
                 .createdAt(order.getCreatedAt())
                 .updatedAt(order.getUpdatedAt())
                 .confirmedAt(order.getConfirmedAt())
+                .paidAt(order.getPaidAt())
+                .paymentCode("HV" + order.getId().toString().substring(0, 8).toUpperCase())
+                .paymentVerified(order.getPaymentVerifiedAt() != null)
+                .paymentVerifiedAt(order.getPaymentVerifiedAt())
                 .purchasedAt(order.getPurchasedAt())
                 .shippedAt(order.getShippedAt())
                 .deliveredAt(order.getDeliveredAt())
                 .trackingNumber(order.getTrackingNumber());
         if (forStaff) {
             b.staffNotes(order.getStaffNotes());
+            b.paymentVerifiedBy(order.getPaymentVerifiedBy());
             if (order.getCustomer() != null) {
                 b.customerName(order.getCustomer().getName());
                 b.customerEmail(order.getCustomer().getEmail());

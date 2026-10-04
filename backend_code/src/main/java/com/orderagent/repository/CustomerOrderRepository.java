@@ -13,10 +13,12 @@ public interface CustomerOrderRepository extends JpaRepository<CustomerOrder, UU
     // The customer's open order (at most one).
     Optional<CustomerOrder> findFirstByCustomer_IdAndStatus(UUID customerId, OrderStatus status);
 
+    Optional<CustomerOrder> findByIdAndCustomer_Id(UUID id, UUID customerId);
+
     List<CustomerOrder> findByCustomer_IdOrderByCreatedAtDesc(UUID customerId);
 
-    // Staff only ever see orders the customer has confirmed.
-    List<CustomerOrder> findByStatusNotOrderByConfirmedAtDesc(OrderStatus status);
+    // Staff only ever see orders the customer has PAID (reported payment), never open or unpaid ones.
+    List<CustomerOrder> findByPaidAtIsNotNullOrderByPaidAtDesc();
 
-    List<CustomerOrder> findByStatusOrderByConfirmedAtDesc(OrderStatus status);
+    List<CustomerOrder> findByPaidAtIsNotNullAndStatusOrderByPaidAtDesc(OrderStatus status);
 }

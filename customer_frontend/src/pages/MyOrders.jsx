@@ -2,8 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   auth, getCurrentOrder, listMyOrders, updateCurrentItem, removeCurrentItem, discardCurrentOrder,
-  confirmCurrentOrder, errorMessage, fmtDate,
+  confirmCurrentOrder, getPaymentInfo, reportPaid, cancelUnpaid, errorMessage, fmtDate,
 } from '../services/api'
+import PaymentCard from '../components/PaymentCard'
 import Icon from '../components/Icon'
 import Logo from '../components/Logo'
 import StatusBadge from '../components/StatusBadge'
@@ -19,7 +20,9 @@ export default function MyOrders() {
   const navigate = useNavigate()
   const user = auth.user()
   const [current, setCurrent] = useState(null)   // the open order (status NEW)
-  const [orders, setOrders] = useState([])       // orders already sent to us (confirmed and later)
+  const [orders, setOrders] = useState([])       // orders already paid (and later), plus cancelled ones
+  const [awaiting, setAwaiting] = useState([])   // confirmed but not paid yet: QR payment due
+  const [payInfo, setPayInfo] = useState(null)   // QR image + transfer details set by the admin
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -30,9 +33,11 @@ export default function MyOrders() {
     setError('')
     setLoading(true)
     try {
-      const [cur, all] = await Promise.all([getCurrentOrder(), listMyOrders()])
+      const [cur, all, info] = await Promise.all([getCurrentOrder(), listMyOrders(), getPaymentInfo().catch(() => null)])
       setCurrent(cur)
-      setOrders(all.filter((o) => o.status !== 'NEW'))
+      setPayInfo(info)
+      setAwaiting(all.filter((o) => o.status === 'AWAITING_PAYMENT'))
+      setOrders(all.filter((o) => o.status !== 'NEW' && o.status !== 'AWAITING_PAYMENT'))
     } catch (err) {
       setError(errorMessage(err))
     } finally {
@@ -58,12 +63,30 @@ export default function MyOrders() {
   }
 
   const confirm = async () => {
-    if (!window.confirm('Gửi đơn này cho Hàng Về xử lý? Sau khi xác nhận bạn không sửa được nữa.')) return
+    if (!window.confirm('Xác nhận đơn này và chuyển sang bước thanh toán? Sau khi xác nhận bạn không sửa được đơn nữa.')) return
     setBusy(true)
     setError('')
     try {
       await confirmCurrentOrder()
-      setNotice('Đã xác nhận đơn hàng. Nhân viên sẽ xử lý và báo giá cho bạn.')
+      setNotice('Đã xác nhận đơn hàng. Hãy thanh toán bằng mã QR bên dưới, nhân viên sẽ xử lý đơn sau khi bạn báo đã thanh toán.')
+      await load()
+    } catch (err) {
+      setError(errorMessage(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // "I have paid" -> the order becomes visible to staff; "cancel" -> never reaches them.
+  const payAction = async (order, kind) => {
+    if (kind === 'paid' && !window.confirm('Bạn đã chuyển khoản xong? Nhân viên sẽ đối chiếu và xử lý đơn.')) return
+    if (kind === 'cancel' && !window.confirm('Hủy đơn này?')) return
+    setBusy(true)
+    setError('')
+    setNotice('')
+    try {
+      await (kind === 'paid' ? reportPaid(order.id) : cancelUnpaid(order.id))
+      setNotice(kind === 'paid' ? 'Cảm ơn bạn! Nhân viên sẽ đối chiếu khoản thanh toán và xử lý đơn.' : 'Đã hủy đơn.')
       await load()
     } catch (err) {
       setError(errorMessage(err))
@@ -137,6 +160,17 @@ export default function MyOrders() {
         {notice && <p className="mt-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800 ring-1 ring-emerald-100">{notice}</p>}
         {loading && !current && <p className="mt-10 text-center text-slate-400">Đang tải đơn hàng của bạn…</p>}
 
+        {/* ---- Confirmed orders waiting for payment (QR) ---- */}
+        {!loading && awaiting.length > 0 && (
+          <section className="mt-6 space-y-4">
+            <h2 className="text-lg font-bold">Đơn chờ thanh toán</h2>
+            {awaiting.map((o) => (
+              <PaymentCard key={o.id} order={o} info={payInfo} busy={busy}
+                onPaid={() => payAction(o, 'paid')} onCancel={() => payAction(o, 'cancel')} />
+            ))}
+          </section>
+        )}
+
         {/* ---- The open order ---- */}
         {!loading && (
           <section className="mt-6">
@@ -206,7 +240,7 @@ export default function MyOrders() {
                   {[
                     ['Mở sản phẩm', 'Vào một sản phẩm trên 1688 hoặc Taobao.'],
                     ['Thêm vào đơn', 'Chọn số lượng/phân loại như bình thường, rồi bấm “Thêm vào đơn” ở nút nổi Hàng Về. Thêm được nhiều sản phẩm.'],
-                    ['Xác nhận', 'Xem lại đơn ngay trong tiện ích, rồi bấm “Xác nhận đặt hàng”.'],
+                    ['Xác nhận & thanh toán', 'Xem lại đơn, bấm “Xác nhận đặt hàng”, rồi thanh toán bằng mã QR. Nhân viên xử lý đơn sau khi bạn báo đã thanh toán.'],
                   ].map(([t, d], n) => (
                     <li key={t} className="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-100">
                       <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent-500 text-sm font-bold text-white">{n + 1}</span>
@@ -265,7 +299,10 @@ function OrderCard({ order: o }) {
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="font-mono text-sm font-bold text-slate-700">Đơn #{o.code}</p>
-            <p className="text-xs text-slate-400">Xác nhận lúc {fmtDate(o.confirmedAt)} · {o.itemCount} sản phẩm · {o.totalQuantity} cái</p>
+            <p className="text-xs text-slate-400">
+              {o.paidAt ? `Thanh toán lúc ${fmtDate(o.paidAt)}` : `Tạo lúc ${fmtDate(o.confirmedAt || o.createdAt)}`} · {o.itemCount} sản phẩm · {o.totalQuantity} cái
+              {o.status === 'CONFIRMED' && <span className="ml-2 font-medium text-sky-700">{o.paymentVerified ? '· Đã đối soát thanh toán' : '· Đang chờ nhân viên đối soát thanh toán'}</span>}
+            </p>
           </div>
           <StatusBadge status={o.status} />
         </div>

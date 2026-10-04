@@ -1,6 +1,8 @@
 // Order lifecycle:
-//   NEW (open order, only the customer sees it) -> CONFIRMED (customer confirmed; staff see it)
-//   -> PURCHASED -> SHIPPED -> DELIVERED, or CANCELLED after confirmation.
+//   NEW (open order, only the customer sees it)
+//   -> AWAITING_PAYMENT (customer confirmed; QR payment due; still invisible to staff)
+//   -> CONFIRMED (customer reported the payment; staff see it, verify the money arrived)
+//   -> PURCHASED -> SHIPPED -> DELIVERED, or CANCELLED.
 // FLOW is the part that staff process and that the progress tracker draws.
 export const FLOW = ['CONFIRMED', 'PURCHASED', 'SHIPPED', 'DELIVERED']
 
@@ -9,8 +11,12 @@ export const STATUS_META = {
     label: 'Đang soạn', step: 'Đang soạn', icon: 'cart', stamp: 'createdAt',
     badge: 'bg-slate-100 text-slate-700 ring-slate-300', tile: 'bg-slate-200 text-slate-600', bar: 'bg-slate-400',
   },
+  AWAITING_PAYMENT: {
+    label: 'Chờ thanh toán', step: 'Chờ thanh toán', icon: 'qr', stamp: 'confirmedAt',
+    badge: 'bg-orange-50 text-orange-700 ring-orange-200', tile: 'bg-orange-100 text-orange-600', bar: 'bg-orange-500',
+  },
   CONFIRMED: {
-    label: 'Đã xác nhận', step: 'Đã xác nhận', icon: 'inbox', stamp: 'confirmedAt',
+    label: 'Đã thanh toán', step: 'Đã thanh toán', icon: 'wallet', stamp: 'paidAt',
     badge: 'bg-sky-50 text-sky-700 ring-sky-200', tile: 'bg-sky-100 text-sky-600', bar: 'bg-sky-500',
   },
   PURCHASED: {
@@ -46,3 +52,6 @@ const CATEGORY_VI = {
 export const categoryLabel = (c) => (c ? CATEGORY_VI[c] || c : '')
 
 export const money = (n) => (n == null ? '—' : `¥${Number(n).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}`)
+
+// Estimated amount in VND from the CNY total and the admin's exchange rate (null when no rate is set).
+export const vnd = (cny, rate) => (rate ? `${Math.round(Number(cny) * Number(rate)).toLocaleString('vi-VN')} ₫` : null)

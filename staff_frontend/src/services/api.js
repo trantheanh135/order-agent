@@ -48,6 +48,10 @@ const VI_MESSAGES = {
   'Name is required': 'Vui lòng nhập họ tên',
   'Password is required': 'Vui lòng nhập mật khẩu',
   'Password must be at least 8 characters': 'Mật khẩu phải có ít nhất 8 ký tự',
+  'Verify the payment before processing the order': 'Hãy xác nhận đã nhận tiền trước khi xử lý đơn.',
+  'qrImage must be a PNG, JPEG or WebP data URL': 'Ảnh QR phải là PNG, JPEG hoặc WebP.',
+  'qrImage is too large': 'Ảnh QR quá lớn.',
+  'exchangeRate must be positive': 'Tỷ giá phải lớn hơn 0.',
   'Use /api/auth/register for customer accounts': 'Tài khoản khách hàng phải đăng ký ở trang khách hàng',
 }
 
@@ -73,6 +77,9 @@ export const login = (email, password) => api.post('/auth/login', { email, passw
 // Staff only ever receive orders the customer has confirmed (never open ones).
 export const listOrders = () => api.get('/staff/orders').then((r) => r.data)
 export const updateOrder = (id, patch) => api.patch(`/staff/orders/${id}`, patch).then((r) => r.data)
+// Payment settings: QR image, transfer instructions and exchange rate (admin only to change).
+export const getPaymentInfo = () => api.get('/payment-info').then((r) => r.data)
+export const savePaymentSettings = (body) => api.put('/staff/payment-settings', body).then((r) => r.data)
 export const createStaff = (body) => api.post('/staff/users', body).then((r) => r.data)
 
 // Support chat inbox (shared by all staff / admin). `after` = polling cursor; markRead = thread is open.

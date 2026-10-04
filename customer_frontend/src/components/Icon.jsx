@@ -20,6 +20,8 @@ const PATHS = {
   chat: <path d="M4 5h16v11H9.5L4 20.5V5z" />,
   send: <path d="M3 11.5l18-8-8 18-2.2-7.8L3 11.5zM10.8 13.7L21 3.5" />,
   play: <><circle cx="12" cy="12" r="9" /><path d="M10 8.5l5.5 3.5-5.5 3.5z" /></>,
+  qr: <><rect x="4" y="4" width="6" height="6" rx="1" /><rect x="14" y="4" width="6" height="6" rx="1" /><rect x="4" y="14" width="6" height="6" rx="1" /><path d="M14 14h3v3h-3zM20 14v3M17 20h3M14 20v-3" /></>,
+  wallet: <><path d="M3 7a2 2 0 012-2h13v3" /><path d="M3 7v11a2 2 0 002 2h14a1 1 0 001-1V9a1 1 0 00-1-1H5a2 2 0 01-2-2z" /><circle cx="16.5" cy="14" r="1.2" /></>,
   inbox: <path d="M3 13l3-8h12l3 8v6H3v-6zM3 13h5l1 2.5h6l1-2.5h5" />,
 }
 

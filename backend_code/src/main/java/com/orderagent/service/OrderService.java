@@ -102,14 +102,34 @@ public class OrderService {
         return OrderResponse.emptyDraft();
     }
 
-    /** NEW -> CONFIRMED. From now on the order is visible to staff and can no longer be edited. */
+    /**
+     * NEW -> AWAITING_PAYMENT. The order can no longer be edited and the customer must pay.
+     * Staff still do NOT see it: that only happens once the customer reports the payment.
+     */
     public OrderResponse confirm(UUID customerId) {
         CustomerOrder order = currentOrThrow(customerId);
         if (order.getItems().isEmpty()) {
             throw new BadRequestException("The order has no items");
         }
-        order.setStatus(OrderStatus.CONFIRMED);
+        order.setStatus(OrderStatus.AWAITING_PAYMENT);
         order.setConfirmedAt(LocalDateTime.now());
+        orderRepository.save(order);
+        return OrderResponse.fromEntity(order, false);
+    }
+
+    /** AWAITING_PAYMENT -> CONFIRMED: the customer says they paid. From now on staff see the order. */
+    public OrderResponse reportPaid(UUID customerId, UUID orderId) {
+        CustomerOrder order = ownOrderAwaitingPayment(customerId, orderId);
+        order.setStatus(OrderStatus.CONFIRMED);
+        order.setPaidAt(LocalDateTime.now());
+        orderRepository.save(order);
+        return OrderResponse.fromEntity(order, false);
+    }
+
+    /** The customer gives up before paying. Never reaches staff. */
+    public OrderResponse cancelUnpaid(UUID customerId, UUID orderId) {
+        CustomerOrder order = ownOrderAwaitingPayment(customerId, orderId);
+        order.setStatus(OrderStatus.CANCELLED);
         orderRepository.save(order);
         return OrderResponse.fromEntity(order, false);
     }
@@ -121,32 +141,45 @@ public class OrderService {
                 .toList();
     }
 
-    // ---- staff: confirmed orders only ----------------------------------------------------------
+    // ---- staff: orders the customer has PAID ---------------------------------------------------
 
     @Transactional(readOnly = true)
     public List<OrderResponse> listForStaff(OrderStatus statusFilter) {
-        if (statusFilter == OrderStatus.NEW) {
-            return List.of(); // open orders are private to the customer
+        if (statusFilter == OrderStatus.NEW || statusFilter == OrderStatus.AWAITING_PAYMENT) {
+            return List.of(); // not paid yet: private to the customer
         }
         List<CustomerOrder> orders = statusFilter != null
-                ? orderRepository.findByStatusOrderByConfirmedAtDesc(statusFilter)
-                : orderRepository.findByStatusNotOrderByConfirmedAtDesc(OrderStatus.NEW);
+                ? orderRepository.findByPaidAtIsNotNullAndStatusOrderByPaidAtDesc(statusFilter)
+                : orderRepository.findByPaidAtIsNotNullOrderByPaidAtDesc();
         return orders.stream().map(o -> OrderResponse.fromEntity(o, true)).toList();
     }
 
     @Transactional(readOnly = true)
     public OrderResponse getForStaff(UUID id) {
-        return OrderResponse.fromEntity(findConfirmedOrThrow(id), true);
+        return OrderResponse.fromEntity(findPaidOrThrow(id), true);
     }
 
-    public OrderResponse updateByStaff(UUID id, OrderUpdateRequest request) {
-        CustomerOrder order = findConfirmedOrThrow(id);
+    public OrderResponse updateByStaff(UUID staffId, UUID id, OrderUpdateRequest request) {
+        CustomerOrder order = findPaidOrThrow(id);
+
+        // "The money has arrived": do this first so it can be combined with the first status change.
+        if (Boolean.TRUE.equals(request.getPaymentVerified()) && order.getPaymentVerifiedAt() == null) {
+            User staff = userRepository.findById(staffId)
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "id", staffId));
+            order.setPaymentVerifiedAt(LocalDateTime.now());
+            order.setPaymentVerifiedBy(staff.getName());
+        }
 
         if (request.getStatus() != null && request.getStatus() != order.getStatus()) {
-            if (request.getStatus() == OrderStatus.NEW) {
-                throw new BadRequestException("A confirmed order cannot go back to NEW");
+            OrderStatus target = request.getStatus();
+            if (target == OrderStatus.NEW || target == OrderStatus.AWAITING_PAYMENT) {
+                throw new BadRequestException("A paid order cannot go back to " + target);
             }
-            applyStatusTransition(order, request.getStatus());
+            boolean processing = target == OrderStatus.PURCHASED || target == OrderStatus.SHIPPED || target == OrderStatus.DELIVERED;
+            if (processing && order.getPaymentVerifiedAt() == null) {
+                throw new BadRequestException("Verify the payment before processing the order");
+            }
+            applyStatusTransition(order, target);
         }
         if (request.getStaffNotes() != null) {
             order.setStaffNotes(request.getStaffNotes());
@@ -194,11 +227,21 @@ public class OrderService {
                 .orElseThrow(() -> new ResourceNotFoundException("OrderItem", "id", itemId));
     }
 
-    private CustomerOrder findConfirmedOrThrow(UUID id) {
+    // Staff only ever see orders whose payment was reported (never open or unpaid ones).
+    private CustomerOrder findPaidOrThrow(UUID id) {
         CustomerOrder order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", id));
-        if (order.getStatus() == OrderStatus.NEW) {
-            throw new ResourceNotFoundException("Order", "id", id); // staff never see open orders
+        if (order.getPaidAt() == null) {
+            throw new ResourceNotFoundException("Order", "id", id);
+        }
+        return order;
+    }
+
+    private CustomerOrder ownOrderAwaitingPayment(UUID customerId, UUID orderId) {
+        CustomerOrder order = orderRepository.findByIdAndCustomer_Id(orderId, customerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
+        if (order.getStatus() != OrderStatus.AWAITING_PAYMENT) {
+            throw new BadRequestException("This order is not waiting for payment");
         }
         return order;
     }

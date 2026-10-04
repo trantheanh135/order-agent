@@ -46,7 +46,7 @@ export default function Orders() {
       .filter((o) => !filter || o.status === filter)
       .filter((o) => !q || [o.code, o.customerName, o.customerEmail, o.trackingNumber, ...o.items.map((i) => i.title)]
         .some((v) => v && v.toLowerCase().includes(q)))
-      .sort((a, b) => new Date(b.confirmedAt) - new Date(a.confirmedAt))
+      .sort((a, b) => new Date(b.paidAt) - new Date(a.paidAt))
   }, [orders, filter, search])
 
   const selected = orders.find((o) => o.id === selectedId)
@@ -57,7 +57,7 @@ export default function Orders() {
       <div className="mb-6 flex flex-wrap items-end gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Hàng đợi đơn hàng</h1>
-          <p className="text-sm text-slate-500">{orders.length} đơn khách đã xác nhận · đơn đang soạn chưa hiện ở đây</p>
+          <p className="text-sm text-slate-500">{orders.length} đơn khách đã thanh toán · đơn chưa thanh toán chưa hiện ở đây</p>
         </div>
         <div className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto">
           <div className="relative min-w-0 flex-1 sm:flex-none">
@@ -106,7 +106,7 @@ export default function Orders() {
               <th className="px-4 py-3">Tạm tính</th>
               <th className="px-4 py-3">Tiến độ</th>
               <th className="px-4 py-3">Trạng thái</th>
-              <th className="px-4 py-3">Xác nhận lúc</th>
+              <th className="px-4 py-3">Thanh toán lúc</th>
             </tr>
           </thead>
           <tbody>
@@ -117,7 +117,7 @@ export default function Orders() {
               <tr>
                 <td colSpan="6" className="px-4 py-14 text-center text-slate-400">
                   <Icon name="inbox" size={36} className="mx-auto mb-2" />
-                  {orders.length === 0 ? 'Chưa có đơn nào được khách xác nhận.' : 'Không có đơn hàng nào phù hợp với bộ lọc.'}
+                  {orders.length === 0 ? 'Chưa có đơn nào được khách thanh toán.' : 'Không có đơn hàng nào phù hợp với bộ lọc.'}
                 </td>
               </tr>
             )}
@@ -145,8 +145,8 @@ export default function Orders() {
                   {o.unpricedItems > 0 && <div className="text-xs text-amber-600">{o.unpricedItems} món chưa có giá</div>}
                 </td>
                 <td className="px-4 py-3"><ProgressTracker item={o} compact /></td>
-                <td className="px-4 py-3"><StatusBadge status={o.status} /></td>
-                <td className="whitespace-nowrap px-4 py-3 text-slate-500">{fmtDate(o.confirmedAt)}</td>
+                <td className="px-4 py-3"><StatusBadge status={o.status} />{!o.paymentVerified && o.status !== 'CANCELLED' && <div className="mt-1 text-[11px] font-semibold text-amber-600">Chờ đối soát tiền</div>}</td>
+                <td className="whitespace-nowrap px-4 py-3 text-slate-500">{fmtDate(o.paidAt)}</td>
               </tr>
             ))}
           </tbody>
@@ -172,6 +172,7 @@ function Drawer({ order, onSaved, onClose }) {
   }, [onClose])
 
   const next = nextStatus(order.status)
+  const needsVerify = !order.paymentVerified && order.status !== 'CANCELLED'
   const dirty = status !== order.status || tracking !== (order.trackingNumber || '') || notes !== (order.staffNotes || '')
 
   const save = async (overrideStatus) => {
@@ -188,6 +189,21 @@ function Drawer({ order, onSaved, onClose }) {
       onSaved(updated)
       setStatus(updated.status)
       setMsg({ ok: true, text: 'Đã lưu' })
+    } catch (err) {
+      setMsg({ ok: false, text: errorMessage(err) })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // "The money has arrived": required before the order can be processed.
+  const verify = async () => {
+    setBusy(true)
+    setMsg(null)
+    try {
+      const updated = await updateOrder(order.id, { paymentVerified: true })
+      onSaved(updated)
+      setMsg({ ok: true, text: 'Đã xác nhận nhận tiền' })
     } catch (err) {
       setMsg({ ok: false, text: errorMessage(err) })
     } finally {
@@ -215,8 +231,25 @@ function Drawer({ order, onSaved, onClose }) {
         <div className="flex-1 space-y-5 overflow-y-auto p-5 text-sm">
           <div className="card p-4"><ProgressTracker item={order} /></div>
 
+          {order.status !== 'CANCELLED' || order.paymentVerified ? (
+            <div className={`rounded-lg p-3 ring-1 ${order.paymentVerified ? 'bg-emerald-50 text-emerald-900 ring-emerald-100' : 'bg-amber-50 text-amber-900 ring-amber-200'}`}>
+              <div className="text-xs font-semibold uppercase tracking-wide">Thanh toán</div>
+              {order.paymentVerified ? (
+                <p className="mt-1">Đã nhận tiền · xác nhận bởi <b>{order.paymentVerifiedBy}</b> lúc {fmtDate(order.paymentVerifiedAt)}</p>
+              ) : (
+                <>
+                  <p className="mt-1">
+                    Khách báo đã thanh toán lúc {fmtDate(order.paidAt)}. Hãy đối chiếu sao kê ngân hàng với nội dung chuyển khoản{' '}
+                    <b className="font-mono">{order.paymentCode}</b> · tạm tính <b>{money(order.estimatedTotal)}</b>, rồi xác nhận.
+                  </p>
+                  <button onClick={verify} disabled={busy} className="btn-primary mt-2 w-full">Xác nhận đã nhận tiền</button>
+                </>
+              )}
+            </div>
+          ) : null}
+
           {next && order.status !== 'CANCELLED' && (
-            <button onClick={() => save(next)} disabled={busy} className="btn-primary w-full py-2.5">
+            <button onClick={() => save(next)} disabled={busy || needsVerify} className="btn-primary w-full py-2.5">
               Chuyển sang “{STATUS_META[next].label}” <Icon name="arrow" size={16} />
             </button>
           )}
@@ -254,14 +287,14 @@ function Drawer({ order, onSaved, onClose }) {
 
           <dl className="grid grid-cols-[7rem_1fr] gap-y-2">
             <dt className="text-slate-400">Khách hàng</dt><dd>{order.customerName}<div className="text-xs text-slate-400">{order.customerEmail}</div></dd>
-            <dt className="text-slate-400">Xác nhận lúc</dt><dd>{fmtDate(order.confirmedAt)}</dd>
+            <dt className="text-slate-400">Thanh toán lúc</dt><dd>{fmtDate(order.paidAt)}</dd>
           </dl>
 
           <hr className="border-slate-100" />
 
           <label className="block font-medium text-navy-800">Trạng thái
             <select value={status} onChange={(e) => setStatus(e.target.value)} className="field">
-              {STATUSES.map((s) => <option key={s} value={s}>{STATUS_META[s].label}</option>)}
+              {STATUSES.map((s) => <option key={s} value={s} disabled={needsVerify && ['PURCHASED', 'SHIPPED', 'DELIVERED'].includes(s)}>{STATUS_META[s].label}</option>)}
             </select>
           </label>
           <label className="block font-medium text-navy-800">Mã vận đơn

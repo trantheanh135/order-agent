@@ -51,6 +51,17 @@ public class CustomerOrder {
     @Column(name = "confirmed_at")
     private LocalDateTime confirmedAt;
 
+    // When the customer reported the payment. Staff only ever see orders where this is set.
+    @Column(name = "paid_at")
+    private LocalDateTime paidAt;
+
+    // Set by staff once they checked that the money really arrived. Processing (PURCHASED...) requires it.
+    @Column(name = "payment_verified_at")
+    private LocalDateTime paymentVerifiedAt;
+
+    @Column(name = "payment_verified_by")
+    private String paymentVerifiedBy;
+
     @Column(name = "purchased_at")
     private LocalDateTime purchasedAt;
 

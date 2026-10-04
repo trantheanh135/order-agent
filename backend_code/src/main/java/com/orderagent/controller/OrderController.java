@@ -51,6 +51,18 @@ public class OrderController {
         return orderService.confirm(SecurityUtil.getCurrentUserId());
     }
 
+    /** "I have paid": the order becomes visible to staff. */
+    @PostMapping("/{orderId}/paid")
+    public OrderResponse paid(@PathVariable UUID orderId) {
+        return orderService.reportPaid(SecurityUtil.getCurrentUserId(), orderId);
+    }
+
+    /** Give up on an order that is still waiting for payment. */
+    @PostMapping("/{orderId}/cancel")
+    public OrderResponse cancelUnpaid(@PathVariable UUID orderId) {
+        return orderService.cancelUnpaid(SecurityUtil.getCurrentUserId(), orderId);
+    }
+
     @GetMapping("/me")
     public List<OrderResponse> mine() {
         return orderService.listMine(SecurityUtil.getCurrentUserId());
