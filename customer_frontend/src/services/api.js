@@ -18,11 +18,13 @@ export const auth = {
   },
 }
 
-const api = axios.create({ baseURL: '/api' })
+const api = axios.create({ baseURL: `${import.meta.env.BASE_URL}api` })
 
 api.interceptors.request.use((config) => {
   const token = auth.token()
   if (token) config.headers.Authorization = `Bearer ${token}`
+  // Skip ngrok's free-plan browser warning page for API calls (avoids ERR_NGROK_6024).
+  config.headers['ngrok-skip-browser-warning'] = '1'
   return config
 })
 
@@ -34,7 +36,7 @@ api.interceptors.response.use(
     const isAuthCall = err.config?.url?.includes('/auth/')
     if ((status === 401 || status === 403) && !isAuthCall && auth.token()) {
       auth.clear()
-      window.location.assign('/login')
+      window.location.assign(`${import.meta.env.BASE_URL}login`)
     }
     return Promise.reject(err)
   }
